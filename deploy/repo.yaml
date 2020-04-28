@@ -84,8 +84,6 @@ spec:
             - mountPath: /etc/nginx/conf/conf.d/default.conf
               name: repo-nginx-configmap-volume
               subPath: default.conf
-            - mountPath: /repo
-              name: repo-data-volume
         - name: rsync-server
           image: opensourceway/rsyncd:0.0.5
           imagePullPolicy: "Always"
