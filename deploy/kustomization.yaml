@@ -1,0 +1,6 @@
+resources:
+  - repo.yaml
+  - namespace.yaml
+commonLabels:
+  app: repo
+
