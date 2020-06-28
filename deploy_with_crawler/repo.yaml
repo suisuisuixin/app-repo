@@ -1,0 +1,146 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: repo-configmap
+data:
+  _settings.yaml: |
+    #used for fscrawler settings
+  ssh.pub: |
+    #used for connection via ssh
+  rsyncd.conf: |
+    #rsync config
+  default.conf: |
+    #nginx server config
+  nginx.conf: |-
+    user  root;
+    worker_processes  auto;
+
+    error_log  /var/log/nginx/error.log warn;
+    pid        /var/run/nginx.pid;
+
+
+    events {
+        worker_connections  1024;
+    }
+
+
+    http {
+        include       /etc/nginx/conf/mime.types;
+        default_type  application/octet-stream;
+
+        # used for geoip2
+        geoip2 /etc/nginx/geoip/country/GeoLite2-Country.mmdb {
+            $geoip2_metadata_country_build metadata build_epoch;
+            $geoip2_data_country_code default=US source=$remote_addr country iso_code;
+            $geoip2_data_country_name country names en;
+        }
+
+        geoip2 /etc/nginx/geoip/city/GeoLite2-City.mmdb {
+            $geoip2_data_city_name default=ShenZhen city names en;
+            $geoip2_data_location_latitude location latitude;
+            $geoip2_data_location_longitude location longitude;
+        }
+
+        log_format  main  '$remote_addr '
+                          '[$time_local] "$request" $status $body_bytes_sent "$http_referer" '
+                          '"$http_user_agent" $request_filename';
+
+        sendfile        on;
+        tcp_nopush      on;
+
+        keepalive_timeout  65;
+
+        #gzip  on;
+
+        include /etc/nginx/conf/conf.d/*.conf;
+    }
+# Deployment for repo service
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: repo-server
+  labels:
+    app: repo-nginx-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: repo-nginx-pod
+  template:
+    metadata:
+      labels:
+        app: repo-nginx-pod
+    spec:
+      containers:
+        - name: repo-nginx
+          image: opensourceway/nginx-extras:1.10.3
+          imagePullPolicy: "Always"
+          volumeMounts:
+            - mountPath: /etc/nginx/conf/nginx.conf
+              name: repo-nginx-configmap-volume
+              subPath: nginx.conf
+            - mountPath: /etc/nginx/conf/conf.d/default.conf
+              name: repo-nginx-configmap-volume
+              subPath: default.conf
+        - name: fscrawler-client
+          image: opensourceway/fscrawler:0.0.1
+          imagePullPolicy: "Always"
+          volumeMounts:
+            - mountPath: /fscrawler/_settings.yaml
+              name: repo-nginx-configmap-volume
+              subPath: _settings.yaml
+          command:
+            - /bin/sh
+            - -c
+            - |
+              mkdir -p /.fscrawler/openeuler
+              cp /fscrawler/_settings.yaml ~/.fscrawler/openeuler/_settings.yaml
+              exec fscrawler openeuler
+        - name: rsync-server
+          image: opensourceway/rsyncd:0.0.5
+          imagePullPolicy: "Always"
+          volumeMounts:
+            - mountPath: /etc/rsyncd.conf
+              name: repo-nginx-configmap-volume
+              subPath: rsyncd.conf
+            - mountPath: /root/.ssh/authorized_keys.ro
+              name: repo-nginx-configmap-volume
+              subPath: ssh.pub
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp /etc/rsyncd.secrets.ro /etc/rsyncd.secrets
+              chmod 0400 /etc/rsyncd.secrets
+              cp /root/.ssh/authorized_keys.ro /root/.ssh/authorized_keys
+              chmod 0400 /root/.ssh/authorized_keys
+              chown root:root /root/.ssh/authorized_keys
+              /usr/sbin/sshd &
+              exec /usr/bin/rsync --no-detach --daemon --config /etc/rsyncd.conf;
+      volumes:
+        - name: repo-nginx-configmap-volume
+          configMap:
+            name: repo-configmap
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: repo-service
+spec:
+  externalTrafficPolicy: Local
+  ports:
+    - port: 873
+      name: rsync-server-port
+      targetPort: 873
+    - port: 80
+      name: nginx-repo-http
+      targetPort: 80
+    - port: 22
+      name: rsync-ssh-server-port
+      targetPort: 22
+  selector:
+    app: repo-nginx-pod
+  type: LoadBalancer
