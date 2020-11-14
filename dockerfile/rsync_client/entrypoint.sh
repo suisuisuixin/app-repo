@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e
 # shellcheck disable=SC2039
 if [[ ! -f "/etc/rsyncd.secrets" ]]; then
         echo "password file '/etc/rsyncd.secrets' not existed. exit none zero."
