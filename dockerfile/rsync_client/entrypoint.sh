@@ -29,7 +29,7 @@ while true; do
    if [[ -z "${ADDITIONAL_PARAMETERS}" ]]; then
       rsync -av --partial --progress --password-file=/etc/rsyncd.secrets  "${SYNC_HOST}"  "${TARGET_DIR}"
    else
-      rsync -av --partial --progress "${ADDITIONAL_PARAMETERS}" --password-file=/etc/rsyncd.secrets  "${SYNC_HOST}"  "${TARGET_DIR}"
+      rsync -av --partial --progress ${ADDITIONAL_PARAMETERS} --password-file=/etc/rsyncd.secrets  "${SYNC_HOST}"  "${TARGET_DIR}"
    fi
    sleep "${RSYNC_INTERNAL}"
 done
