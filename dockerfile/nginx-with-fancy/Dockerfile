@@ -8,7 +8,6 @@ RUN apt -y update \
     && apt install -y wget \
     && apt install -y git \
     && apt install -y make build-essential libpcre3 libpcre3-dev openssl libssl-dev software-properties-common openssh-server tzdata\
-    && /etc/init.d/ssh start\
     && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
 # install mmdb
