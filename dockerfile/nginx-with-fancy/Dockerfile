@@ -16,8 +16,8 @@ RUN add-apt-repository -y ppa:maxmind/ppa \
     && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
 # prepare nginx
-RUN wget http://nginx.org/download/nginx-1.19.7.tar.gz \
-    && tar -xvf nginx-1.19.7.tar.gz && rm nginx-1.19.7.tar.gz
+RUN wget http://nginx.org/download/nginx-1.20.0.tar.gz \
+    && tar -xvf nginx-1.20.0.tar.gz && rm nginx-1.20.0.tar.gz
 
 # prepare nginx fancyindex
 RUN git clone https://github.com/aperezdc/ngx-fancyindex.git ngx-fancyindex
@@ -28,10 +28,10 @@ RUN wget https://github.com/leev/ngx_http_geoip2_module/archive/master.tar.gz &&
     mv ngx_http_geoip2_module-master ngx_http_geoip2_module && \
     rm master.tar.gz
 
-RUN cd nginx-1.19.7 \
+RUN cd nginx-1.20.0 \
     && ./configure --prefix=/etc/nginx/ --add-module=../ngx-fancyindex --with-http_ssl_module --with-http_realip_module --add-module=../ngx_http_geoip2_module\
     && make && make install \
-    && cd ../ && rm -rf nginx-1.19.7  && rm -rf ngx-fancyindex && rm -rf ngx_http_geoip2_module\
+    && cd ../ && rm -rf nginx-1.20.0  && rm -rf ngx-fancyindex && rm -rf ngx_http_geoip2_module\
     && mkdir -p /var/log/nginx
 
 # prepare geo database
